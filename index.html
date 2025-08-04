@@ -346,6 +346,7 @@
                     <button class="btn" onclick="showAddForm()">+ Adicionar Item</button>
                     <button class="btn" onclick="exportPauta()">📄 Exportar Pauta</button>
                     <button class="btn danger" onclick="clearAllItems()">🗑️ Limpar Tudo</button>
+                    <button class="btn" style="background: linear-gradient(45deg, #f39c12, #e67e22);" onclick="clearExamples()">🧹 Remover Exemplos</button>
                 </div>
 
                 <div class="form-group">
@@ -469,34 +470,47 @@
                 items: pautaItems,
                 date: pautaDate
             };
-            // Em uma aplicação real, aqui você salvaria no servidor
+            // Salva no localStorage do navegador
+            localStorage.setItem('pautaData', JSON.stringify(data));
             console.log('Dados salvos:', data);
         }
 
         function loadData() {
-            // Em uma aplicação real, aqui você carregaria do servidor
-            // Por enquanto, carregamos dados de exemplo baseados no documento
-            if (pautaItems.length === 0) {
-                pautaItems = [
-                    {
-                        type: 'projeto',
-                        number: '002',
-                        author: 'EXECUTIVO MUNICIPAL',
-                        ementa: 'Institui a Logomarca Oficial da Gestão Municipal de Careiro, altera o Parágrafo Único do Artigo 1º da Lei Municipal nº 301, de 15 de maio de 2001 e dá outras providências.'
-                    },
-                    {
-                        type: 'resolucao',
-                        number: '001',
-                        author: 'MESA DIRETORA CMC',
-                        ementa: 'Cria a Comissão Permanente de Segurança Pública no âmbito da Câmara Municipal do Careiro, e dá outras providências.'
-                    },
-                    {
-                        type: 'requerimento',
-                        number: '125',
-                        author: 'JOÃO DOZA',
-                        ementa: 'seja encaminhado à Excelentíssima Senhora MARA ALVES DE LIMA, Prefeita Municipal do Careiro/AM, a presente solicitação para que determine à Secretaria Municipal competente a construção de uma nova escola na Comunidade da Matinha, - Distrito de Janauacá, bem como que sejam adotadas medidas emergenciais de recuperação e amenização da situação precária da escola atualmente em funcionamento naquela localidade'
-                    }
-                ];
+            // Carrega dados salvos do localStorage
+            const savedData = localStorage.getItem('pautaData');
+            
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                pautaItems = data.items || [];
+                pautaDate = data.date || new Date().toISOString().split('T')[0];
+            } else {
+                // Apenas na primeira vez, carrega exemplos
+                const hasVisited = localStorage.getItem('hasVisited');
+                if (!hasVisited) {
+                    pautaItems = [
+                        {
+                            type: 'projeto',
+                            number: '002',
+                            author: 'EXECUTIVO MUNICIPAL',
+                            ementa: 'Institui a Logomarca Oficial da Gestão Municipal de Careiro, altera o Parágrafo Único do Artigo 1º da Lei Municipal nº 301, de 15 de maio de 2001 e dá outras providências.'
+                        },
+                        {
+                            type: 'resolucao',
+                            number: '001',
+                            author: 'MESA DIRETORA CMC',
+                            ementa: 'Cria a Comissão Permanente de Segurança Pública no âmbito da Câmara Municipal do Careiro, e dá outras providências.'
+                        },
+                        {
+                            type: 'requerimento',
+                            number: '125',
+                            author: 'JOÃO DOZA',
+                            ementa: 'seja encaminhado à Excelentíssima Senhora MARA ALVES DE LIMA, Prefeita Municipal do Careiro/AM, a presente solicitação para que determine à Secretaria Municipal competente a construção de uma nova escola na Comunidade da Matinha, - Distrito de Janauacá, bem como que sejam adotadas medidas emergenciais de recuperação e amenização da situação precária da escola atualmente em funcionamento naquela localidade'
+                        }
+                    ];
+                    localStorage.setItem('hasVisited', 'true');
+                } else {
+                    pautaItems = [];
+                }
             }
         }
 
@@ -587,6 +601,23 @@
         function clearAllItems() {
             if (confirm('Tem certeza que deseja limpar todos os itens? Esta ação não pode ser desfeita.')) {
                 pautaItems = [];
+                saveData();
+                renderAdminItems();
+                renderViewerItems();
+            }
+        }
+
+        function clearExamples() {
+            if (confirm('Deseja remover apenas os itens de exemplo? Seus itens adicionados serão mantidos.')) {
+                // Remove apenas os itens de exemplo (identificados pelos textos específicos)
+                pautaItems = pautaItems.filter(item => {
+                    const isExample = (
+                        (item.number === '002' && item.author === 'EXECUTIVO MUNICIPAL') ||
+                        (item.number === '001' && item.author === 'MESA DIRETORA CMC') ||
+                        (item.number === '125' && item.author === 'JOÃO DOZA')
+                    );
+                    return !isExample;
+                });
                 saveData();
                 renderAdminItems();
                 renderViewerItems();
